@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenMTM2: Monster Truck Madness 2 in your browser</title>
+<meta name="description" content="OpenMTM2 is a free, open-source, clean-room implementation of Monster Truck Madness 2 that runs in your web browser. Single player, online multiplayer and party modes, plus tracks and vehicles from MTM1, CART Precision Racing and 4x4 Evolution.">
+<meta name="keywords" content="OpenMTM2, Monster Truck Madness 2, MTM2, Monster Truck Madness, Terminal Reality, CART Precision Racing, 4x4 Evolution, browser game, open source, POD editor, Traxx, track editor">
+<meta name="author" content="Juan Pablo Utreras">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0d1013">
+<link rel="canonical" href="https://openmtm2.github.io/">
+<link rel="icon" href="img/icon.png">
+<link rel="apple-touch-icon" href="img/icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OpenMTM2">
+<meta property="og:title" content="OpenMTM2: Monster Truck Madness 2 in your browser">
+<meta property="og:description" content="A free, open-source, clean-room implementation of Monster Truck Madness 2 for the web. Bring your own game data or start from the free trial.">
+<meta property="og:url" content="https://openmtm2.github.io/">
+<meta property="og:image" content="https://openmtm2.github.io/img/race.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="623">
+<meta property="og:image:alt" content="An eight-truck race in OpenMTM2">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenMTM2: Monster Truck Madness 2 in your browser">
+<meta name="twitter:description" content="A free, open-source, clean-room implementation of Monster Truck Madness 2 for the web.">
+<meta name="twitter:image" content="https://openmtm2.github.io/img/race.jpg">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "OpenMTM2",
+      "url": "https://openmtm2.github.io/"
+    },
+    {
+      "@type": ["VideoGame", "SoftwareApplication"],
+      "name": "OpenMTM2",
+      "description": "A free, open-source, clean-room implementation of Monster Truck Madness 2 that runs in the web browser.",
+      "url": "https://juanputrerasm.github.io/OpenMTM2/",
+      "image": "https://openmtm2.github.io/img/race.jpg",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web browser",
+      "genre": "Racing",
+      "playMode": ["SinglePlayer", "MultiPlayer"],
+      "license": "https://www.apache.org/licenses/LICENSE-2.0",
+      "codeRepository": "https://github.com/juanputrerasm/OpenMTM2",
+      "author": { "@type": "Person", "name": "Juan Pablo Utreras", "url": "https://github.com/juanputrerasm" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="img/icon.png" alt="" width="48" height="48">
+    <div>
+      <h1>OpenMTM2</h1>
+      <p class="tag">Monster Truck Madness 2 in your browser.</p>
+    </div>
+  </div>
+</header>
+
+<nav class="bar">
+  <div class="wrap">
+    <a href="#about">About</a>
+    <a href="#features">Features</a>
+    <a href="#screens">Screenshots</a>
+    <a href="#projects">Other projects</a>
+    <a href="#community">Community</a>
+    <a href="https://github.com/juanputrerasm/OpenMTM2">Source code</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <p class="hero"><img src="img/race.jpg" alt="An eight-truck race in OpenMTM2 with the enhanced renderer" width="1280" height="623"></p>
+
+  <p class="play">
+    <a class="button" href="https://juanputrerasm.github.io/OpenMTM2/">Play OpenMTM2</a>
+    <span class="muted">Free. Runs in Chrome, Edge, Firefox and Safari, on desktop and phone. Nothing to install.</span>
+  </p>
+
+  <h2 id="about">About</h2>
+  <p>
+    <b>OpenMTM2</b> is an open-source implementation of <i>Monster Truck Madness 2</i>
+    for the web. It reads the game data from your own MTM2 installation and plays it in 
+    a modern browser, with the original tracks, trucks, rules and HUD.
+  </p>
+  <p>
+    You don't need the CD to try it: OpenMTM2 can start from Microsoft's free MTM2 trial. It also
+    accepts data from <b>Beta 10</b>, retail <b>2.00.41</b>, the patched <b>2.00.42</b> and the
+    community patches up to <b>Community Patch 3</b>. Your files stay on your computer; nothing is
+    uploaded.
+  </p>
+  <p>
+    It goes further than MTM2, too. Add the PODs from <b>Monster Truck Madness 1</b>,
+    <b>CART Precision Racing</b> or <b>4x4 Evolution 1 and 2</b> and you can race their trucks and
+    cars on any track, each vehicle on its own game's physics.
+  </p>
+
+  <h2 id="features">Features</h2>
+  <ul class="features">
+    <li><b>Single player:</b> Circuit, Rally, Summit Rumble, drag racing and tournaments, with up to eight trucks, driver profiles and a Hall of Fame.</li>
+    <li><b>Multiplayer:</b> online rooms for up to 16 players, and classic TCP/IP play against the original game.</li>
+    <li><b>Party modes:</b> Hockey, Soccer, Tag, Cops &amp; Robbers, Race &amp; Rumble, Combat, and Freestyle shows judged out of 10.</li>
+    <li><b>Classic or enhanced graphics:</b> the original look, or weather, water, shadows and modern scenery.</li>
+    <li><b>Replays:</b> instant replays that read and write the game's own <code>.rpl</code> files.</li>
+    <li><b>Gamepad and phone:</b> play with a controller from start to finish, or install it on your phone's Home Screen.</li>
+    <li><b>Extras:</b> rumble supportm, rebindable controls, party-modes, free roam, an in-game console and WebXR for VR headsets.</li>
+  </ul>
+
+  <h2 id="screens">Screenshots</h2>
+  <div class="gallery">
+    <figure><a href="img/freestyle.jpg"><img src="img/freestyle.jpg" alt="Freestyle mode" loading="lazy"></a><figcaption>New Freestyle mode, judged out of 10</figcaption></figure>
+    <figure><a href="img/hockey.jpg"><img src="img/hockey.jpg" alt="Hockey on ice" loading="lazy"></a><figcaption>Party modes: Hockey on the ice rink</figcaption></figure>
+    <figure><a href="img/farm.jpg"><img src="img/farm.jpg" alt="Online race on a farm road 29" loading="lazy"></a><figcaption>Combat mode for extra damage</figcaption></figure>
+    <figure><a href="img/multiplayer.jpg"><img src="img/multiplayer.jpg" alt="Two browser windows in the same race" loading="lazy"></a><figcaption>Online racing</figcaption></figure>
+    <figure><a href="img/classic.jpg"><img src="img/classic.jpg" alt="Drag race with the classic renderer" loading="lazy"></a><figcaption>The classic MTM1 look</figcaption></figure>
+    <figure><a href="img/evo2.jpg"><img src="img/evo2.jpg" alt="A 4x4 Evolution 2 track" loading="lazy"></a><figcaption>4x4 Evolution 2 track support</figcaption></figure>
+    <figure><a href="img/scenery.jpg"><img src="img/scenery.jpg" alt="Enhanced scenery from above" loading="lazy"></a><figcaption>Enhanced graphics</figcaption></figure>
+    <figure><a href="img/canyon.jpg"><img src="img/canyon.jpg" alt="The Heights track seen from above" loading="lazy"></a><figcaption>Free camera over The Heights</figcaption></figure>
+  </div>
+
+  <h2 id="projects">Other projects</h2>
+  <p class="muted">Browser tools for the same games, built alongside OpenMTM2. All of them run locally; your files are never uploaded.</p>
+
+  <table class="projects">
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSPod/"><img src="img/jspod.jpg" alt="JSPod" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSPod/">JSPod</a></h3>
+        <p>An editor for Terminal Reality POD archives. Create, edit and save POD1 and POD2 files, and preview the models, textures and sounds inside.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSPod/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSPod">Source</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSTrackViewer/"><img src="img/jstrackviewer.jpg" alt="JSTrackViewer" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSTrackViewer/">JSTrackViewer</a></h3>
+        <p>An advanced 3D track viewer for MTM1, MTM2, CART Precision Racing, 4x4 Evolution, Terminal Velocity, Fury3, Hellbender and Fly!. Fly around a level or test-drive it.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSTrackViewer/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSTrackViewer">Source</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSTruckViewer/"><img src="img/jstruckviewer.jpg" alt="JSTruckViewer" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSTruckViewer/">JSTruckViewer</a></h3>
+        <p>A 3D vehicle viewer for MTM1 and MTM2 trucks, CART cars and 4x4 Evolution vehicles, fully assembled with wheels, suspension and lights.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSTruckViewer/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSTruckViewer">Source</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSTraxx/"><img src="img/jstraxx.jpg" alt="JSTraxx" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSTraxx/">JSTraxx</a></h3>
+        <p>Traxx, the classic MTM2 track editor, in the browser. Build terrain, place objects, textures and courses, and save tracks the game can load.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSTraxx/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSTraxx">Source</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSMTM2Converter/"><img src="img/jsmtm2converter.jpg" alt="JSMTM2Converter" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSMTM2Converter/">JSMTM2Converter</a></h3>
+        <p>Converts 4x4 Evolution 1 and 2 tracks and trucks into PODs that OpenMTM2 or MTM2 CommPatch 3 can use.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSMTM2Converter/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSMTM2Converter">Source</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="thumb"><a href="https://juanputrerasm.github.io/JSPaintShop/"><img src="img/jspaintshop.jpg" alt="JSPaintShop" loading="lazy"></a></td>
+      <td>
+        <h3><a href="https://juanputrerasm.github.io/JSPaintShop/">JSPaintShop</a></h3>
+        <p>An image editor modelled on Paint Shop Pro 6, the tool many MTM2 modders used to paint truck and track textures.</p>
+        <p class="links"><a href="https://juanputrerasm.github.io/JSPaintShop/">Open</a> &middot; <a href="https://github.com/juanputrerasm/JSPaintShop">Source</a></p>
+      </td>
+    </tr>
+  </table>
+
+  <h3 class="list-head">Java tools</h3>
+  <p class="muted small">Java 17 or newer. For macOS, Windows and Linux.</p>
+  <ul class="plain">
+    <li><a href="https://github.com/juanputrerasm/JPod">JPod</a>: open, browse, preview, extract and build POD archives for every Terminal Reality game.</li>
+    <li><a href="https://github.com/juanputrerasm/JPodman">JPodman</a>: manage the <code>pod.ini</code> mount list. Shows which tracks and trucks each POD holds, warns about clashing files, among other features.</li>
+  </ul>
+
+  <h3 class="list-head">Windows tools</h3>
+  <p class="muted small">Based on .NET Framework 4.8</p>
+  <ul class="plain">
+    <li><a href="https://github.com/juanputrerasm/KPod">KPod</a>: the Windows version of JPod.</li>
+    <li><a href="https://github.com/juanputrerasm/KPodman">KPodman</a>: the Windows version of JPodman.</li>
+  </ul>
+
+  <h3 class="list-head">Libraries</h3>
+  <ul class="plain">
+    <li><a href="https://github.com/juanputrerasm/OpenPhotex">OpenPhotex</a>: reads and writes the file formats of Terminal Reality games, from PODs to tracks, models and textures. TypeScript for browsers and Node.js, with a command-line tool. Core library for JSPod, JSTrackViewer, JSTruckViewer and JSMTM2Converter.</li>
+  </ul>
+
+  <h2 id="community">Community Links</h2>
+  <ul class="plain">
+    <li><a href="https://mtm2.com/">MTM2.com</a> home of the MTM2 community, with news and downloads.</li>
+    <li><a href="https://forum.mtm2.com/">MTM2.com Forum</a> talk with other players, ask for help and share your tracks and trucks.</li>
+    <li><a href="https://mtm2.com/~mtmg/index.php">The Monster Truck Madness Guild</a> the MTMG, a website dedicated to help truck and track builders.</li>
+    <li><a href="https://mtm2.com/%7Etraxx/index.shtml">Traxx</a> home page of the classic MTM2 track editor.</li>
+    <li><a href="https://mtm2.com/~tracks/tracks.php">MTM2 tracks</a> an archive of custom tracks to download.</li>
+    <li><a href="https://mtm2.com/~trucks/trucks.php">MTM2 trucks</a> an archive of custom trucks to download.</li>
+    <li><a href="https://mtm2.com/%7Ekmaster/">Kmaster's House of Wicked Awesomeness</a> Kmaster's MTM2 site with tools and downloads.</li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      OpenMTM2 is open source under the Apache 2.0 license. It contains no Microsoft or Terminal
+      Reality game data. <i>Monster Truck Madness</i> is a trademark of its owners; this project is
+      not affiliated with them.
+    </p>
+    <p>2026 Kmaster - <a href="https://github.com/juanputrerasm">github.com/juanputrerasm</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
