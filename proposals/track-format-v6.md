@@ -4,6 +4,7 @@ Status: draft open specification, 2026-11-13
 Applies to: Monster Truck Madness 2 tracks, for any engine or tool that reads or writes them (OpenMTM2, Community Patch 4, track editors, converters)
 Maintained by: the OpenMTM2 project
 Replaces: the earlier drafts "tall tracks with fine height steps" (2026-11-09) and "maps four times larger" (2026-11-13)
+Revised: 2026-11-13, after the first implementations: `.WFL` version 2 (9.3); the world's size picks the `.WTR` and `.WFL` versions (9.1, 9.3); the editor's working file, `.TXX` generation TRAXXV19 (15); `.SI3` listing and `terrainGrid` clarified (5.1, 10)
 
 This is an open specification. Anyone may implement it, in any engine or tool, without asking and without a fee. It is written so that an engine developer can implement it from this document alone; the background it relies on is summarised in section 4, with the analysis documents it comes from named there.
 
@@ -101,7 +102,7 @@ CP4 adds `DATA\<stem>.TXV`, `key = value` lines with `#` comments, keys case-ins
 | `DATA\<stem>.CL1` | | 4 | 262,144 |
 | `WORLD\<stem>.WTR` tile map | lake id per tile | 1 | 65,536 |
 
-Already independent of the world's size: object positions, the grid, checkpoints and courses (text feet in the .SIT/.SI2); models (.BIN) and surfaces (.SRF); CP4 waterfalls (.WFL, u32 1/16 ft); vegetation grass tiles (u16); multiplayer truck positions in CP3 and CP4 (32-bit floats in feet, which still resolve 1/500 ft at 16,384 ft); the engine's 32-bit 1/256 ft positions (16,384 ft is 4,194,304 units).
+Already independent of the world's size: object positions, the grid, checkpoints and courses (text feet in the .SIT/.SI2); models (.BIN) and surfaces (.SRF); vegetation grass tiles (u16); multiplayer truck positions in CP3 and CP4 (32-bit floats in feet, which still resolve 1/500 ft at 16,384 ft); the engine's 32-bit 1/256 ft positions (16,384 ft is 4,194,304 units).
 
 ### 4.4 How tracks are found
 
@@ -114,7 +115,8 @@ The retail game builds its track list from every `.SIT` entry in the mounted POD
 - A version 6 track's situation file is **`WORLD\<stem>.SI3`**. In this version its text is exactly a `.SI2`'s (MTM2 SIT syntax); only the rules in this document differ. Later versions of this specification may extend the `.SI3` text itself.
 - A version 6 reader MUST list `.SI3` entries as tracks, with `.SI2` and `.SIT`.
 - Older builds list `.SIT` (retail) or `.SIT` and `.SI2` (CP3, CP4 0.52), so they never see a `.SI3` track. (That they skip an unknown extension is INFERRED from how the retail list is built; it is the purpose of the new name.)
-- A track MUST use `.SI3` when it uses any key of section 6 other than `formatVersion`. A writer MUST NOT use those keys in a `.SIT` or `.SI2` track.
+- A track MUST use `.SI3` when it uses `worldCells`, `terrainHeightMap`, `terrainHeightStep` or `terrainHeightBase`. A writer MUST NOT use those keys in a `.SIT` or `.SI2` track. (`terrainGrid` and `formatVersion` are CP4's own keys, which `.SI2` tracks already use.)
+- A lake or a waterfall never makes a track version 6: their file versions follow the world's size (9.1, 9.3).
 - A `.SIT` or `.SI2` in the same POD is a different track, read by today's rules. It is not a version of the `.SI3` track for older builds: a quarter of a 512 world, or a squashed mountain, is not the same track. A writer SHOULD give it a different stem.
 
 ### 5.2 The .TXV
@@ -141,7 +143,7 @@ terrainGrid=fine
 | `terrainHeightMap` | The entry holding the heights: a `.PNG` (greyscale, colour type 0 or 4, 8 or 16-bit, alpha ignored) or a `.RAW` (unsigned 16-bit). | none: CP4's rules (`DATA\<stem>.RAW` or `terrainHeights`), allowed only when `worldCells=256` |
 | `terrainHeightStep` | Steps per foot: 1, 2, 4, 8, 16, 32, 64 or 128. | 128 |
 | `terrainHeightBase` | Whole feet added to every height, -32768 to 32767. | 0 |
-| `terrainGrid` | `classic`, `spline` or `fine`, as in CP4 (section 7.2). | `classic` for an N square file, `fine` for 4N |
+| `terrainGrid` | `classic`, `spline` or `fine`, as in CP4 (section 7.2). CP4's own key: a `.SI2` track may use it too. | `classic` for an N square file, `fine` for 4N |
 
 With `worldCells=512`, `terrainHeightMap` is required.
 
@@ -247,7 +249,7 @@ Object, grid, checkpoint and course positions are in feet, in [0, W). A negative
 
 ### 9.1 Lakes (`WORLD\<stem>.WTR`), version 2
 
-Version 1 holds only a 256 x 256 map, u8 bounding boxes and heights from 0.5 to 2,048 ft. Version 2 widens all three. A `.SI3` track MAY use version 1 when N = 256 and every lake fits version 1; otherwise it MUST use version 2. A version 6 reader MUST read both.
+Version 1 holds only a 256 x 256 map, u8 bounding boxes and heights from 0.5 to 2,048 ft. Version 2 widens all three for the 512-cell world. **The world's size picks the version:** a 256-cell track (`.SIT`, `.SI2`, or a `.SI3` of 256 cells) MUST use version 1, and a 512-cell track MUST use version 2. A reader MUST refuse any other pairing. A lake that version 1 cannot hold (above 2,048 ft) cannot be part of a 256-cell track. A version 6 reader MUST read both.
 
 | Offset | Field | Version 2 |
 |---|---|---|
@@ -256,11 +258,11 @@ Version 1 holds only a 256 x 256 map, u8 bounding boxes and heights from 0.5 to 
 | +6 | u16 minor | 0 |
 | +8 | u32 directory offset, at least 0x20 | same |
 | +0x0c | u32 chunk count | same |
-| +0x10 | u16 width, u16 height | **N, N** |
+| +0x10 | u16 width, u16 height | **512, 512** |
 
 Directory entries are 16 bytes, {tag, version 1, offset, size}, as in version 1.
 
-- `TMAP`: exactly N² bytes, one lake id per tile (0 none), index `z * N + x`.
+- `TMAP`: exactly 512² bytes, one lake id per tile (0 none), index `z * 512 + x`.
 - `BODY`: u32 count, u16 stride (at least 0x40), records from +8:
 
 | Offset | Version 1 | Version 2 |
@@ -279,20 +281,49 @@ The surface is `height * 128` in 1/256 ft. In version 2 a height is valid from `
 
 The layout does not change. `TREE` x and z MUST be in 0 to W * 256 (exclusive) 1/256 ft units, instead of below 0x200000. `GRAS` tile numbers run 0 to N - 1.
 
-### 9.3 Waterfalls (`WORLD\<stem>.WFL`) and fog volumes
+### 9.3 Waterfalls (`WORLD\<stem>.WFL`), version 2
 
-Waterfalls do not change. A fog volume's distance to the view is wrapped at W.
+Version 1 (CP4 beta 0.53) holds only a 256 x 256 header, crest points below 8,192 ft and crest heights from 0.5 to 2,048 ft, and CP4 builds its falls in a 256 world: segment lengths wrapped at 8,192 ft, the source lake looked up in a 256 x 256 map, the walk on 16-bit heights at 1/64 ft. Version 2 widens all of these for the 512-cell world. **As for lakes, the world's size picks the version:** a 256-cell track (`.SIT`, `.SI2`, or a `.SI3` of 256 cells) MUST use version 1 (a fall above 2,048 ft cannot be part of one), and a 512-cell track MUST use version 2. A version 6 reader MUST read both, and MUST refuse any other pairing (a header that is not the track's N x N: 256 x 256 in version 1, 512 x 512 in version 2), as CP4 refuses a file "authored for a different terrain size".
+
+| Offset | Field | Version 2 |
+|---|---|---|
+| +0 | magic `MWFL` | same |
+| +4 | u16 major | **2** |
+| +6 | u16 minor | 0, or 1 when the records carry the mist size (as version 1.1) |
+| +8 | u32 directory offset, at least 0x20 | same |
+| +0x0c | u32 chunk count | same |
+| +0x10 | u16 tiles x, u16 tiles z | **512, 512** |
+
+The directory and the `FALL` chunk (version 1, u32 count, u16 stride of 128 or 132) do not change. In each record:
+
+| Offset | Version 1 | Version 2 |
+|---|---|---|
+| +8 | u32 crest height, half-feet, 1..4096 | **i32** crest height, half-feet, in a version 2 lake's range (9.1) |
+| +0x0c | 8 x (u32 x, u32 z) crest points, 1/16 ft, each below 0x20000 (8,192 ft) | each below **0x40000** (16,384 ft) |
+
+Every other field and check is version 1's. Building the falls of either version on a version 6 track, a reader MUST take the world constants from N (8.1):
+
+- crest segments are measured the short way across the wrap at W (W / 2 either side);
+- the direction check's tile is `floor(p / 32) & (N - 1)` per axis, looked up in the N x N `TMAP` (9.1);
+- the walk's ground is the track's terrain, held as 7.3 says (at least 32 bits; the recommended h128 store times 2 is the walk's 1/256 ft), on the N x N or 4N x 4N grid as the terrain is read; its water is the N x N `TMAP`;
+- a fall's mist volume and sound are placed in [0, W).
+
+A crest height still has to equal its source lake's height exactly. CP4 0.53 refuses a major version other than 1 ("This track's waterfalls need a newer build."), so it never misreads a version 2 file.
+
+### 9.4 Fog volumes
+
+A fog volume's distance to the view is wrapped at W.
 
 ## 10. Reader checklist
 
 A version 6 reader MUST:
 
-1. List `.SI3` tracks and prefer them per stem (5.1).
+1. List `.SI3` tracks alongside `.SIT` and `.SI2`. A `.SIT` or `.SI2` of the same stem is a different track with its own entry, never a fallback (5.1).
 2. Read the keys of section 6 from a `.SI3` track's .TXV, and refuse bad values (5.2).
 3. Read heights by 7.1 and 7.2 and store them as 7.3.
 4. Take every world constant from N (8.1), and check every grid file's size against N (8.2).
 5. Read 8 and 16-bit ground boxes (8.3).
-6. Read `.WTR` versions 1 and 2, and accept `.VEG` positions across the world (9).
+6. Read `.WTR` and `.WFL` version 1 on a 256-cell track and version 2 on a 512-cell one, refusing any other pairing (9.1, 9.3); build waterfalls in the N world (9.3); accept `.VEG` positions across the world (9.2).
 7. Accept object, lake and fog heights across the whole terrain range.
 8. Check anything else tied to height or world size. Our CP4 analysis has not traced:
    - camera far plane and fog distance;
@@ -333,6 +364,8 @@ terrainHeightStep = the largest power of two, at most 128,
 
 A `.SIT` or `.SI2` track without the keys of section 6 is not affected by this document.
 
+Lakes and waterfalls: CP4 refuses a `.WTR` or `.WFL` of any major version but 1, so it never misreads a version 2 file; it never meets one either, since version 2 belongs to 512-cell `.SI3` tracks. Editors: Traxx 1.7.1 refuses a TRAXXV19 `.TXX` (section 15), so it never misreads one.
+
 ## 13. Why this design
 
 **A new extension is the only reliable gate.** `formatVersion` is information that no build refuses, so a reused key or a bigger file would load wrong in an older build without warning. CP4 0.52 reads a RAW of unknown size as classic and takes its first 64 KiB, and a 256-cell build cannot reach half of a 512 world. Older builds never list a `.SI3`, so they show nothing rather than something broken.
@@ -347,7 +380,9 @@ A `.SIT` or `.SI2` track without the keys of section 6 is not affected by this d
 
 **Same cells, more of them.** Every rule about a cell stays. Engines change constants, not algorithms, and authors keep their sense of scale. 512 keeps the engine's shift-and-mask cell lookup.
 
-**Small change for an engine.** The file layouts, the smoothing and the PNG decoder are CP4's own, at a size given by one number. Only the lake file needs new fields, and its header already has a size.
+**Small change for an engine.** The file layouts, the smoothing and the PNG decoder are CP4's own, at a size given by one number. Only the lake and waterfall files need new fields, and their headers already have a size.
+
+**One world, one version.** A lake or waterfall file's version follows the world's size, with no choice per file. A version 1 file in a 512-cell world could hold only a quarter of the data the world needs; a version 2 file in a 256-cell world would carry a larger layout for nothing, and would make a lake or a waterfall a reason for a track to stop loading in CP4. One rule keeps every reader and writer in step: version 1 with 256 cells, version 2 with 512.
 
 ## 14. Related engine limits
 
@@ -361,23 +396,96 @@ These limits are not part of the format, and this document does not change them.
 | Course | about 250 straights | A lap in a 16,384 ft world can be much longer |
 | CP4 collidable models (`.clsh` cache) | 2,048 | |
 
-## 15. Implementation in the OpenMTM2 projects
+## 15. The editor's working file: `.TXX` generation TRAXXV19
+
+This section is not part of the track format: no game reads a `.TXX`. It is recorded here so that every editor that saves version 6 tracks writes the same working file.
+
+### 15.1 Background
+
+Traxx, the MTM2 track editor (1.7.1, and its web port JSTraxx), saves a track being edited as a `.TXX`: one little-endian record of the whole track, in Traxx's own units. Its first 10 bytes name the generation, `TRAXXV1` to `TRAXXV18`, NUL-padded. Each generation appends fields to the one before, and Traxx writes the lowest generation the track's contents need, so a track that uses nothing new stays readable by an older Traxx. Traxx 1.7.1's loader (`CTrackPOD::LoadBinary`, `TrackPODBinary.cpp`) knows those ten-byte headers by name and aborts on any other.
+
+TRAXXV18 holds the terrain as 256 x 256 cells with 8-bit and 16-bit heights, and ground boxes as two bytes. It cannot hold a version 6 track. **TRAXXV19** is a new generation, defined by JSTraxx, that can. It is not Traxx's.
+
+### 15.2 When it is written
+
+An editor MUST write TRAXXV19 for a version 6 track: one it would save with a `.SI3` (section 5.1). That is a 512-cell world, heights outside 0 to 512 ft or kept in the 32-bit store, ground boxes that need 16 bits, or a track opened from a `.SI3`. It MUST NOT write TRAXXV19 for any other track, which keeps the generation and the bytes Traxx 1.7.1 writes.
+
+### 15.3 Layout
+
+TRAXXV19 is TRAXXV18's record, in the same order, with these differences (N = `worldCells`):
+
+| # | Record | TRAXXV18 | TRAXXV19 |
+|---|---|---|---|
+| 1 | Header | `TRAXXV18` | `TRAXXV19` |
+| 2 | Before the terrain record | (nothing) | **i32 `worldCells`**, 256 or 512 |
+| 3 | Terrain planes | 256 x 256 cells each | **N x N** cells each, coded the same way |
+| 4 | Ground box bottom and top | u8 each, 2 ft units | **f64** each, 2 ft units (any height a version 6 box holds) |
+| 5 | V17 heights (not Classic 8-bit) | u16 samples, 256 x 256 or 1024 x 1024 | **i32 store width** (16 or 32), then N x N (Classic 16-bit, Spline) or 4N x 4N (Full Map) samples of that width |
+| 6 | Lake seeds | 0..255 | 0..N - 1 |
+| 7 | After the V18 waterfalls | (end) | **the V19 block** |
+
+The whole record, in order (strings are one length byte, counting the terminating NUL, then the bytes; a blob is an i32 length then the bytes):
+
+1. The 10-byte header.
+2. Strings: comment, prefix, track name, locale; logo and map bitmap names (V7).
+3. i32 track type, water level (whole part), version flags, ambient sound, weather mask.
+4. Blobs: logo bitmap, map bitmap, music, text; the info bitmap and text (V8); the detail and mask maps, each an extension string and a blob (V9); three HD UI pictures, each an extension string and a blob (V10); i32 water level remainder (V11).
+5. The palette name and its 768 bytes.
+6. Textures (i32 count; each a name, i32 type, i32 depth, i32 0), models (count, names), boxes (count, records).
+7. The primary course, then the extended courses (count, courses).
+8. **V19: i32 `worldCells`.**
+9. The terrain: u16 file flags, then ten run-length coded planes (u8 run, u8 value pairs, runs of 1 to 255, a 0 run ending the plane): the 8-bit heights, the `.CLR` low and high bytes, and the seven `.LTE` planes. **N x N cells in V19.**
+10. Nine trucks.
+11. The backdrop (a string, or a 32-byte stadium record).
+12. i32 misc flags (fog map, sun position, no RAW fallback, PNG heights), and the 32 KB fog map when flagged.
+13. Ground boxes: i32 count; each i32 x, y, width, height (cells), bottom and top (**f64 in V19**), six u16 face texture words.
+14. Sounds, animations, the sun.
+15. Vegetation (V15): two masks (extension string and blob each) and the `.VEG` bytes as a blob.
+16. Lakes (V16): i32 count; each i32 height (half-feet), i32 flags, i32 seed count (0 to 8), seeds as i32 x, z.
+17. The terrain mode (V17): i32, 0 Classic 8-bit, 1 Classic 16-bit, 2 Spline, 3 Full Map; then, unless Classic 8-bit, the heights. **V19: i32 store width, then the samples in 1/128 ft as the store holds them (section 7.3's h128 when 32 bits).**
+18. Waterfalls (V18): i32 block version 2, i32 count; each fall's source, point count, flags, speed, crest height, 8 crest points (x, z), opacity, mist, volume, mist depth and mist height as i32, then the sound and texture stems as char[16]. In V19 the crest points and heights are the track's world's (9.3).
+19. **The V19 block:** i32 block version (1); i32 flags (0x1 the track was opened from a `.SI3`, 0x2 a height step and base are set); i32 `terrainHeightStep`; i32 `terrainHeightBase` (both 0 without flag 0x2).
+20. JSTraxx's optional trailer (`JSTRAXX1`, its extra backdrops), after everything Traxx reads.
+
+### 15.4 Reading it back
+
+A reader restores the world size, the heights in their store, the N x N grids, the ground boxes, the step and base, and whether the track came from a `.SI3`. Saving the track again therefore writes the same pod. Like every `.TXX`, it names art and models without holding them (they come from the project's ART and MODELS folders), and it does not keep the `.TXV`'s text: a writer writes the keys of section 6 afresh from the track.
+
+### 15.5 Compatibility
+
+Traxx 1.7.1 refuses a TRAXXV19 file, since its header is none it knows; it never misreads one. A version 6 track's autosave is TRAXXV19 too. A track that is not version 6 never becomes TRAXXV19, so Traxx keeps opening it.
+
+## 16. Implementation in the OpenMTM2 projects
 
 - **OpenPhotex:**
   - `.SI3` as an MTM2 situation file;
   - the keys of section 6 in `readTxvInfo`;
   - step, base and grid size in the height, `.CLR`, `.LTE` and ground box decoders and writers;
   - 16-bit `.RA0`/`.RA1`;
-  - `.WTR` version 2;
+  - `.WTR` and `.WFL` version 2, the version picked by the world's size, and the waterfall build on an N world (`sim/cp4/falls.ts`);
   - world size in the MTM2 simulation (`sim/mtm2/world/`).
 - **OpenMTM2:**
   - list `.SI3` tracks (`src/worker/catalog.js`);
   - replace `WORLD_FT` (`src/shared/scene-frame.js`) and the other 8,192 ft constants (about 40 files) with the track's world size;
   - lift the 512 ft assumptions.
 - **JSTrackViewer:** the same (about 20 files).
-- **JSTraxx:** height import and export with automatic step and base, a world size choice, `.SI3` saves.
+- **JSTraxx:** height import and export with automatic step and base, a world size choice, `.SI3` saves; lakes and waterfalls in the N world, with errors for a 256-cell lake or crest above 2,048 ft; the `.TXX` generation TRAXXV19 (section 15).
+- **JSPod:** `.SI3` recognised; the `.WTR`, `.VEG` and `.WFL` previews draw a 512-cell world.
 - **Converters:** mm1conversion builds Chicago at true scale in a 512 world; Evo 2 conversions keep Pikes Peak's full height.
 
-## 16. Open question
+## 17. Open questions
 
 What else in an engine assumes 256 cells, 8,192 ft or 512 ft (section 10, item 8)? Findings from any engine are welcome and will be added here.
+
+Points the first implementations met that this document does not settle yet; each says what they do today:
+
+- **Grid file names without a `.RAW`.** With `terrainHeightMap` no `.RAW` is needed, yet the `.LVL` still names one. Implementations take the grid files' names from the `.LVL` as today and do not require the RAW entry itself to exist; the document should say so.
+- **Step and base without `terrainHeightMap`.** Section 7.1 says they do not apply to heights; section 8.3 applies the base to ground boxes. Implementations use step 128 and base 0 throughout such a track. The keys could instead be refused without a height map.
+- **`.RA2` and `.RA3`.** Section 8.2 allows them 16-bit, but section 8.3 names only the `.RA0`/`.RA1` and `.RA4`/`.RA5` pairs. Implementations check their size only.
+- **A bad `.WTR`, `.WFL` or `.VEG`.** Implementations drop the file with a warning and load the track; only a grid file of the wrong size refuses it.
+- **The `.VEG` header's tile counts** stay 256, as Traxx writes them.
+- **Which `.TXV`.** The situation file's stem (section 3); OpenMTM2 also looks up the level's stem first. They differ only when the stems do.
+- **8-bit ground boxes with an odd base.** `base + 2 * byte` cannot reach an odd-foot height, so such a box must be 16-bit.
+- **Ground boxes below the base.** A box under the base cannot be stored; section 11's "lowest point" should count ground boxes, as JSTraxx already does.
+- **512-cell lakes.** A version 2 lake's height range is the terrain's (9.1); JSTraxx's lake checks still accept the whole 32-bit range there and rely on the leak checks.
+- **Drawing around the view.** Section 8.1's view cell has no counterpart in OpenMTM2, which draws world copies spaced W apart.
