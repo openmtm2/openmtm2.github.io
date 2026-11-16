@@ -5,13 +5,13 @@ Applies to: Traxx, the C++ MTM2 track editor (the `Traxx_OnGoing_Updates` source
 Maintained by: the OpenMTM2 project
 Companion to: [MTM2 track format version 6](track-format-v6.md), revision 2026-11-16
 
-This document is for the Traxx maintainers. It lists what Traxx would have to change to open, edit and write version 6 tracks: `.SI3` tracks with a 512-cell world, heights outside 0 to 512 ft, 16-bit ground boxes, `.WTR` and `.WFL` version 2, and the `.TXX` generation of the proposal's section 15. It is not part of the format, and nothing in it is required of Traxx.
+This document is for the Traxx maintainers. It lists what Traxx would have to change to open, edit and write version 6 tracks: `.SI3` tracks with a 512-cell world, heights outside 0 to 512 ft, 16-bit ground boxes, up to 16,384 placed objects, `.WTR` and `.WFL` version 2, and the `.TXX` generation of the proposal's section 15. It is not part of the format, and nothing in it is required of Traxx.
 
 Every function, file and constant named below was read in the Traxx 1.7.3 source (commit `4364111`). Paths are relative to the repository: `TrackPOD\` is the track library, `Include\` its headers, `Traxx\` the application. The library's headers (`TrackPOD.h`, `TrackPODTerrain.h`, `TrackPODGroundbox.h`, `TrackPODLakes.h`, `TrackPODFalls.h`, `TrackPODVegetation.h` and the rest) exist in both `Include\` and `Traxx\` as identical copies, and the comments of `TrackPOD.h`, `TrackPODLakes.h` and `TrackPODFalls.h` require them to stay byte-identical, so every header change below is made in both.
 
 ## 1. Summary
 
-Traxx 1.7.3 has one world: 256 x 256 cells of 32 ft, 8,192 ft a side, with the 8 ft grid at 1024 x 1024. Its heights are 16-bit at 1/128 ft at most (0 to 512 ft), with an 8-bit mirror that tops out at 510 ft. Ground boxes are one byte each. It lists `.SIT` and `.SI2` tracks, reads and writes `.WTR` and `.WFL` version 1, and knows `.TXX` generations TRAXXV1 to TRAXXV19.
+Traxx 1.7.3 has one world: 256 x 256 cells of 32 ft, 8,192 ft a side, with the 8 ft grid at 1024 x 1024. Its heights are 16-bit at 1/128 ft at most (0 to 512 ft), with an 8-bit mirror that tops out at 510 ft. Ground boxes are one byte each, and a track holds at most 4,096 placed objects. It lists `.SIT` and `.SI2` tracks, reads and writes `.WTR` and `.WFL` version 1, and knows `.TXX` generations TRAXXV1 to TRAXXV19 (Traxx 1.8.0 adds TRAXXV20, the lights' all-weather flag, and changes none of this).
 
 | # | Area | Proposal | Size |
 |---|---|---|---|
@@ -27,6 +27,7 @@ Traxx 1.7.3 has one world: 256 x 256 cells of 32 ft, 8,192 ft a side, with the 8
 | 3.10 | Views, tools and dialogs | 7, 8.1 | large |
 | 3.11 | Importing and exporting height maps | 7.2, 11 | medium |
 | 3.12 | Write POD | 5, 8, 9, 11 | medium |
+| 3.13 | Placed objects | 5.3 | medium |
 
 Sizes: **small** is a few functions in one or two files; **medium** is one subsystem across several files; **large** reaches most of the library or the application, or needs a design choice first.
 
@@ -183,7 +184,7 @@ The painted masks (`_V`, `_G`, and the track's `_MASK` and `_WMSK`) cover the tr
 
 Proposal 15.
 
-**Today.** `CTrackPOD::LoadBinary` compares the 10-byte header with `strcmp` against `TRAXXV1` to `TRAXXV19`, and any other header sets the version to 0 and aborts (`FILE_ABORT`) before anything past it is read. `SaveBinary` writes the lowest generation the track needs. The records then follow the generation through `version >= n` tests. The parts version 6 touches:
+**Today.** `CTrackPOD::LoadBinary` compares the 10-byte header with `strcmp` against `TRAXXV1` to `TRAXXV19` (`TRAXXV20` from Traxx 1.8.0), and any other header sets the version to 0 and aborts (`FILE_ABORT`) before anything past it is read. `SaveBinary` writes the lowest generation the track needs. The records then follow the generation through `version >= n` tests. The parts version 6 touches:
 
 - `CTrackPODTerrain::Load` and `Save`: ten planes of 256 x 256 (3.2).
 - `CTrackPODGroundbox::Load` and `Save`: the bottom and top as one byte each.
@@ -191,10 +192,11 @@ Proposal 15.
 - `CTrackPODTerrain::LoadTXXHeights` and `SaveTXXHeights`: the mode, then 131,072 or 2,097,152 bytes of u16.
 - `CTrackPODFalls::SaveTXX`: block version 3 (`LoadTXX` takes 1 to 3).
 - The V19 water detail and water mask records, written only when a map is set.
+- `CTrackPODBox` (Traxx 1.8.0): the V20 i32 `allWx` at the end of every box record, written only when a light has it set.
 
-**Change.** Read and write the generation of proposal 15.3, TRAXXV99 for now: TRAXXV19's record with `worldCells` before the terrain, N x N planes, f64 ground box heights, an i32 store width before the V17 samples, seeds to N - 1, the world's crest points, both water map records always, then the version 6 block (block version 1, flags, step, base). Write it for a version 6 track and only for one (15.2).
+**Change.** Read and write the generation of proposal 15.3, TRAXXV99 for now: TRAXXV20's record with `worldCells` before the terrain, N x N planes, f64 ground box heights, an i32 store width before the V17 samples, seeds to N - 1, the world's crest points, both water map records and every box's `allWx` always, then the version 6 block (block version 1, flags, step, base). Write it for a version 6 track and only for one (15.2).
 
-The number 99 is temporary. The proposal will take whatever number Traxx itself gives version 6 tracks, so the choice is Traxx's. Whichever it is, the loader's `version >= n` tests need care: TRAXXV99 is V19's record, so it must not pass a test for a later generation, such as Traxx 1.8.0's `version >= 20` for the box records' all-weather flag. Reading it as generation 19 with a version 6 flag avoids that.
+The number 99 is temporary. The proposal will take whatever number Traxx itself gives version 6 tracks, so the choice is Traxx's. Whichever it is, the loader's `version >= n` tests need care: TRAXXV99 is V20's record, so it must pass Traxx 1.8.0's `version >= 20` test for the box records' all-weather flag and no test for a later generation. Reading it as generation 20 with a version 6 flag does that.
 
 **Size: medium.**
 
@@ -248,6 +250,29 @@ Proposal 5, 8, 9 and 11.
 
 **Size: medium.**
 
+### 3.13 Placed objects
+
+Proposal 5.3.
+
+**Today.**
+
+- `MAXNPODBOXES` (4,096, `TrackPOD.h`) sizes one array, `CTrackPOD::box`, which holds the objects, ramps and top-crush cars together.
+- The situation reader (`TrackPODFile.cpp`) keeps the ramps, then the objects, then the top-crush cars while they fit. It counts the rest in `sit_objects_dropped`, which `CTraxxDoc` and `CheckIntegrity` report with the limit. The cloner (`TrackPODClone.cpp`) refuses or trims past it the same way.
+- Every pass over the objects runs to `MAXNPODBOXES`. That includes the `.TXX` save (`TrackPODBinary.cpp`), Write POD (`TrackPODFile.cpp`), the views and the GL renderer, the vegetation planter and the pre-flight (`PodPreflightGather.cpp`, `new PfBox[MAXNPODBOXES]`).
+- The view keeps per-object arrays of the same size: `objsel` and `sortedboxes` (`TraxxView.h`), and the `static int sel[MAXNPODBOXES]` buffers of `TraxxViewInteract.cpp`.
+- Insert refuses a full track with "Max. 4096 Objects!" (`TraxxViewEdit.cpp`), a literal.
+- The `.TXX` stores the objects as an i32 count and the records. `LoadBinary` fills `box[i]` for each of `count` without checking it against `MAXNPODBOXES`.
+
+**Change.**
+
+- Size `box` and every array sized from it for 16,384. The simplest way is to raise `MAXNPODBOXES` to 16,384 and add a second constant, 4,096, for the places where it is a rule rather than a size.
+- Make the limit the track's: 16,384 for a version 6 track, 4,096 for any other. The situation reader, insert, paste, the cloner and the messages (`sit_objects_dropped`, `CheckIntegrity`, the insert message) use it.
+- Bound `LoadBinary`'s `count` by the array. The `.TXX` itself needs no new field.
+- Memory stays small: `box`, `objsel` and `sortedboxes` each grow by 12,288 entries.
+- Loops that run to `MAXNPODBOXES` over mostly empty slots run four times longer. The ones run every frame (the views, the renderer) may want a count of the slots in use.
+
+**Size: medium.** The change is mostly constants, but it touches the library, the views and every dialog that counts objects.
+
 ## 4. Suggested order
 
 Each step leaves Traxx usable, and a track that is not version 6 unchanged.
@@ -259,6 +284,7 @@ Each step leaves Traxx usable, and a track that is not version 6 unchanged.
 5. **The world size in the library** (3.1 and 3.2, large; then 3.6, 3.7 and 3.8, medium and small): grids, positions, lakes, falls and vegetation at N.
 6. **The world size in the application** (3.10, large), with a world size choice for a new track.
 7. **Write POD at 512 cells** (3.12): the versions picked by the world's size and the new refusals.
+8. **Placed objects** (3.13, medium): 16,384 on a version 6 track. It can come at any point after step 1.
 
 ## 5. What JSTraxx did
 
@@ -268,10 +294,11 @@ Each step leaves Traxx usable, and a track that is not version 6 unchanged.
 |---|---|
 | `src/core/traxx/world.ts` | N and the grid helpers (index, wrap, world side); the choice of store: a `Uint16Array` for a track within 0 to 512 ft, as Traxx keeps it, an `Int32Array` at 1/128 ft for a version 6 track |
 | `src/core/traxx/v6.ts` | when a document is version 6 (`isV6Document`, `v6Features`), the step and base Write POD picks (`pickStepAndBase`, which counts ground boxes and keeps the track's own values when they still hold every height), and the version 6 height, ground box and `.TXV` writes |
-| `src/core/traxx/txx.ts` | the `.TXX` reader and writer, TRAXXV1 to TRAXXV19 as Traxx writes them and TRAXXV99 for a version 6 track |
+| `src/core/traxx/txx.ts` | the `.TXX` reader and writer, TRAXXV1 to TRAXXV20 as Traxx writes them and TRAXXV99 for a version 6 track |
 | `src/core/traxx/terrain16.ts` | the terrain modes, the 8-bit mirror and its sync at N, with the 32-bit grids; a height below 0 ft mirrors as 0 |
 | `src/core/traxx/lakes.ts` | the lake fill, spill and notches with the tile map, seeds and boxes at N |
 | `src/core/traxx/falls.ts` | the falls in a world of N cells with the track's step and base (`FallWorld`), and the `.WFL` version picked by the world's size |
+| `src/core/traxx/v6.ts`, `objectLimit` | the object limit of a document: 16,384 when it is version 6, else 4,096 (`TRAXX_MAX_BOXES`, `V6_MAX_BOXES` in `src/core/traxx/sit.ts`) |
 | `src/core/doc/pod-to-txx.ts` | a pod track to a `.TXX`, written as TRAXXV99 when the track is version 6 |
 
 A new track's world size is chosen under File > New (`src/app/file-commands.ts`).

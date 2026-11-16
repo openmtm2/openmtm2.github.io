@@ -4,6 +4,8 @@ Status: draft open specification, 2026-11-13
 Applies to: Monster Truck Madness 2 tracks, for any engine or tool that reads or writes them (OpenMTM2, Community Patch 4, track editors, converters)
 Maintained by: the OpenMTM2 project
 Replaces: the earlier drafts "tall tracks with fine height steps" (2026-11-09) and "maps four times larger" (2026-11-13)
+Revised: 2026-11-16 (fourth): a version 6 track may place up to 16,384 objects, four times Traxx's 4,096 (5.3, 10 item 10, 14).
+Revised: 2026-11-16 (third): Traxx 1.8.0 is released with `TRAXXV20` (a light's all-weather flag at the end of every box record), and TRAXXV99 now builds on it (15).
 Revised: 2026-11-16 (second): masks cover the track's own world and detail normals are tiles (9.5); the track's own water keeps its units and may reach the top of a taller version 6 terrain (10, item 7).
 Revised: 2026-11-16: the editor's working file is `.TXX` generation TRAXXV99, a temporary number, since Traxx 1.7.2 already uses TRAXXV19 for its water maps (15); the `.WTR` header flags and the `.WFL` roughFrom byte that Traxx 1.7.3 added, kept by version 2 (9.1, 9.3); what Traxx would change, in a separate document (16)
 Earlier revision: 2026-11-13, after the first implementations: `.WFL` version 2 (9.3); the world's size picks the `.WTR` and `.WFL` versions (9.1, 9.3); the editor's working file (15, then numbered TRAXXV19); `.SI3` listing and `terrainGrid` clarified (5.1, 10)
@@ -16,6 +18,7 @@ Today every MTM2 track is the same size, a square 8,192 ft a side that wraps aro
 
 - **Taller tracks.** A track chooses how fine its height steps are (`terrainHeightStep`) and where its height range starts (`terrainHeightBase`). Heights are still an ordinary 16-bit greyscale PNG or 16-bit RAW. A track can be up to 8,192 ft tall, or keep Community Patch 4's 2.4 mm steps under 512 ft.
 - **Larger worlds.** A track chooses its number of cells along each side (`worldCells`): 256 as today, or **512, a world 16,384 ft a side** with four times the area. A cell is still 32 ft and the fine terrain is still 8 ft.
+- **More objects.** A version 6 track may place up to 16,384 objects, four times the 4,096 of today's editors, for a world with up to four times the area.
 - **A new situation file, `.SI3`.** A version 6 track's situation file is `WORLD\<stem>.SI3`, in the same text format as a `.SI2` for now. Older builds do not list `.SI3` files, so they never offer a track they would load wrongly.
 
 Tracks that use none of this are unchanged and keep loading everywhere as before.
@@ -126,6 +129,14 @@ The retail game builds its track list from every `.SIT` entry in the mounted POD
 - A `.SI3` track MUST have `DATA\<stem>.TXV` with `formatVersion=6`.
 - Key parsing is CP4's (section 4.2). A version 6 reader MUST refuse to load a `.SI3` track whose keys of section 6 have a value outside the allowed ones, with a message naming the key, rather than guess.
 - What a reader does with a `formatVersion` above 6 is up to the reader. Since the `.SI3` format is likely to be updated in later versions, a reader SHOULD at least warn that the track may need a newer build.
+
+### 5.3 Placed objects
+
+- A `.SI3` track MAY place up to **16,384 objects**. They are counted as Traxx counts them: the objects, ramps and top-crush cars of the situation file together, in one list (Traxx's `MAXNPODBOXES`, 4,096 today).
+- A writer MUST NOT write more than 16,384.
+- A version 6 reader MUST keep all 16,384. When a file holds more, it keeps the first 16,384 in the order the file lists them and SHOULD warn.
+- The caps on particular kinds of object are not changed: checkpoints, ramps, top-crush cars, lights, fog volumes and the rest keep the ones they have today (section 14).
+- A `.SIT` or `.SI2` track keeps today's limits.
 
 ## 6. .TXV keys
 
@@ -361,6 +372,7 @@ A version 6 reader MUST:
    - the AI's search for its course segment;
    - replays and saved games;
    - any value assumed to fit in fewer bits than a position in [0, W).
+10. Keep up to 16,384 placed objects (5.3).
 
 ## 11. Writer guidance
 
@@ -398,6 +410,8 @@ Lakes and waterfalls: CP4 refuses a `.WTR` or `.WFL` of any major version but 1,
 
 **A new extension is the only reliable gate.** `formatVersion` is information that no build refuses, so a reused key or a bigger file would load wrong in an older build without warning. CP4 0.52 reads a RAW of unknown size as classic and takes its first 64 KiB, and a 256-cell build cannot reach half of a 512 world. Older builds never list a `.SI3`, so they show nothing rather than something broken.
 
+**Four times the objects.** A 512 world has four times the area of a 256 one, and 16,384 is four times 4,096. It is a power of two, so an editor's fixed arrays and an engine's object indices (14 bits) stay simple. Whole-city Chicago at true scale places 6,553 objects, so the old limit is already too small for the tracks the larger world is for.
+
 **It is a normal image.** 16-bit greyscale PNG is what Photoshop, GIMP, Krita, World Machine, Gaea and GIS tools read and write, and CP4 already accepts it. There is no 24-bit greyscale format; packing heights into RGB would give files no editor can paint.
 
 **It is how other engines do it.** Unity and Unreal store terrain as 16-bit heightmaps with a per-terrain height scale.
@@ -414,11 +428,11 @@ Lakes and waterfalls: CP4 refuses a `.WTR` or `.WFL` of any major version but 1,
 
 ## 14. Related engine limits
 
-These limits are not part of the format, and this document does not change them. A 512 world invites four times the content, so engines may want to raise them:
+Apart from placed objects, which section 5.3 raises for version 6 tracks, these limits are not part of the format, and this document does not change them. A 512 world invites four times the content, so engines may want to raise them:
 
 | Limit | Today | Note |
 |---|---|---|
-| Placed objects | 4,608 (CP3's authoring limit 4,096) | Whole-city Chicago needs about 6,060 at 0.83 scale, mostly props |
+| Placed objects | 4,608 (CP3's authoring limit 4,096); **16,384 on a version 6 track (5.3)** | Whole-city Chicago at true scale places 6,553, mostly props |
 | CP4 surface boxes | 64 | Large cities merge streets into more surface models. OpenMTM2 has no such limit |
 | Checkpoints | 20 a lap | |
 | Course | about 250 straights | A lap in a 16,384 ft world can be much longer |
@@ -434,33 +448,34 @@ This section is not part of the track format: no game reads a `.TXX`. It is reco
 
 Traxx, the MTM2 track editor (the C++ Traxx, and its web port JSTraxx), saves a track being edited as a `.TXX`: one little-endian record of the whole track, in Traxx's own units. Its first 10 bytes name the generation, NUL-padded. Each generation appends fields to the one before, and Traxx writes the lowest generation the track's contents need, so a track that uses nothing new stays readable by an older Traxx.
 
-The generations, as of Traxx 1.7.3 (the released source, commit `4364111`):
+The generations, as of Traxx 1.8.0 (the released source, commit `34aaa67`):
 
 | Generation | Added by | What it adds |
 |---|---|---|
 | `TRAXXV1` to `TRAXXV17` | Traxx up to 1.7.0 | up to the terrain mode and its 16-bit or 8 ft heights |
 | `TRAXXV18` | Traxx 1.7.1 | waterfalls |
 | `TRAXXV19` | Traxx 1.7.2 | the water detail map and the water mask map (`ART\<stem>_WDTL`, `ART\<stem>_WMSK`), after the waterfalls |
+| `TRAXXV20` | Traxx 1.8.0 | an i32 at the very end of every box record, after its fog values: the light's `allWx` (0 or 1; the `.SIT` light line's 13th field). Written only when some light has it set |
 
-Traxx 1.7.2's TRAXXV19 is its own generation. An earlier revision of this section (2026-11-13) gave the same name to the version 6 generation defined here; that generation is now TRAXXV99. Traxx 1.7.3 adds no generation, but its waterfalls block is block version 3, which adds an i32 roughFrom per fall after the mist height (the `.WFL` byte 130, section 9.3); it still reads block versions 1 and 2. Traxx 1.8.0, not yet released, adds `TRAXXV20` (box records end with a light's all-weather flag); TRAXXV99 does not carry that field.
+Traxx 1.7.2's TRAXXV19 is its own generation. An earlier revision of this section (2026-11-13) gave the same name to the version 6 generation defined here; that generation is now TRAXXV99. Traxx 1.7.3 adds no generation, but its waterfalls block is block version 3, which adds an i32 roughFrom per fall after the mist height (the `.WFL` byte 130, section 9.3); it still reads block versions 1 and 2. Traxx 1.8.0 adds `TRAXXV20`; TRAXXV99 carries its field (15.3).
 
-Traxx 1.7.3's loader (`CTrackPOD::LoadBinary`, `TrackPODBinary.cpp`) reads the 10-byte header and compares it with `strcmp` against the nineteen names it defines, `TRAXXV1` to `TRAXXV19`. Any other header sets the version to 0, and the loader closes the file and returns FALSE (`FILE_ABORT`) before it reads anything past the header; Traxx then shows "Error loading txx file".
+Traxx's loader (`CTrackPOD::LoadBinary`, `TrackPODBinary.cpp`) reads the 10-byte header and compares it with `strcmp` against the names it defines: `TRAXXV1` to `TRAXXV19` in Traxx 1.7.3, to `TRAXXV20` in Traxx 1.8.0. Any other header sets the version to 0, and the loader closes the file and returns FALSE (`FILE_ABORT`) before it reads anything past the header; Traxx then shows "Error loading txx file".
 
-TRAXXV19 holds the terrain as 256 x 256 cells with 8-bit and 16-bit heights, and ground boxes as two bytes. It cannot hold a version 6 track. **TRAXXV99** is a generation defined by JSTraxx that can. It is not Traxx's.
+TRAXXV20 holds the terrain as 256 x 256 cells with 8-bit and 16-bit heights, and ground boxes as two bytes. It cannot hold a version 6 track. **TRAXXV99** is a generation defined by JSTraxx that can. It is not Traxx's.
 
 ### 15.2 When it is written
 
 An editor MUST write TRAXXV99 for a version 6 track: one it would save with a `.SI3` (section 5.1). That is a 512-cell world, heights outside 0 to 512 ft or kept in the 32-bit store, ground boxes that need 16 bits, or a track opened from a `.SI3`.
 
-It MUST NOT write TRAXXV99 for any other track. Such a track keeps Traxx's own rule: the lowest generation from TRAXXV1 to TRAXXV19 that its contents need, with the bytes Traxx 1.7.3 writes.
+It MUST NOT write TRAXXV99 for any other track. Such a track keeps Traxx's own rule: the lowest generation from TRAXXV1 to TRAXXV20 that its contents need, with the bytes Traxx 1.8.0 writes.
 
 ### 15.3 Layout
 
-TRAXXV99 is TRAXXV19's record, in the same order, with these differences (N = `worldCells`):
+TRAXXV99 is TRAXXV20's record, in the same order, with these differences (N = `worldCells`):
 
-| # | Record | TRAXXV19 | TRAXXV99 |
+| # | Record | TRAXXV20 | TRAXXV99 |
 |---|---|---|---|
-| 1 | Header | `TRAXXV19` | `TRAXXV99` |
+| 1 | Header | `TRAXXV20` | `TRAXXV99` |
 | 2 | Before the terrain record | (nothing) | **i32 `worldCells`**, 256 or 512 |
 | 3 | Terrain planes | 256 x 256 cells each | **N x N** cells each, coded the same way |
 | 4 | Ground box bottom and top | u8 each, 2 ft units | **f64** each, 2 ft units (any height a version 6 box holds) |
@@ -468,6 +483,7 @@ TRAXXV99 is TRAXXV19's record, in the same order, with these differences (N = `w
 | 6 | Lake seeds | 0..255 | 0..N - 1 |
 | 7 | Waterfalls | block version 3, the 256-cell world | block version 3, the track's world: crest points and heights as section 9.3 allows |
 | 8 | Water detail and water mask maps | both records; the generation is written only when a map is set | **both records always**, an empty extension and length 0 for a map that is not set |
+| 9 | A box's `allWx` | an i32 at the end of every box record; the generation is written only when a light has it set | **always present**, 0 for a box that is not a light or whose light has it clear |
 | 9 | After the water mask map | (end) | **the version 6 block** |
 
 The whole record, in order (strings are one length byte, counting the terminating NUL, then the bytes; a blob is an i32 length then the bytes):
@@ -477,7 +493,7 @@ The whole record, in order (strings are one length byte, counting the terminatin
 3. i32 track type, water level (whole part), version flags, ambient sound, weather mask.
 4. Blobs: logo bitmap, map bitmap, music, text; the info bitmap and text (V8); the detail and mask maps, each an extension string and a blob (V9); three HD UI pictures, each an extension string and a blob (V10); i32 water level remainder (V11).
 5. The palette name and its 768 bytes.
-6. Textures (i32 count; each a name, i32 type, i32 depth, i32 0), models (count, names), boxes (count, records as in TRAXXV19).
+6. Textures (i32 count; each a name, i32 type, i32 depth, i32 0), models (count, names), boxes (count, records as in TRAXXV20, each ending with the i32 `allWx`).
 7. The primary course, then the extended courses (count, courses).
 8. **V99: i32 `worldCells`.**
 9. The terrain: u16 file flags, then ten run-length coded planes (u8 run, u8 value pairs, runs of 1 to 255, a 0 run ending the plane): the 8-bit heights, the `.CLR` low and high bytes, and the seven `.LTE` planes. **N x N cells in V99.**
@@ -501,7 +517,7 @@ A reader restores the world size, the heights in their store, the N x N grids, t
 
 ### 15.5 Compatibility
 
-Traxx 1.7.3 refuses a TRAXXV99 file: its header is none of the nineteen its loader knows, so the loader aborts after the header (15.1) and never misreads it. Traxx 1.8.0's loader, in its unreleased source, adds `TRAXXV20` by name in the same way, so it refuses one too. A version 6 track's autosave is TRAXXV99 as well. A track that is not version 6 never becomes TRAXXV99, so Traxx keeps opening it.
+Traxx 1.7.3 and 1.8.0 refuse a TRAXXV99 file: its header is none of the names their loaders know, so the loader aborts after the header (15.1) and never misreads it. A version 6 track's autosave is TRAXXV99 as well. A track that is not version 6 never becomes TRAXXV99, so Traxx keeps opening it.
 
 When Traxx takes its own generation number for version 6 tracks, the final draft will use that number in place of 99 (see the note at the top of this section).
 
@@ -519,7 +535,7 @@ When Traxx takes its own generation number for version 6 tracks, the final draft
   - replace `WORLD_FT` (`src/shared/scene-frame.js`) and the other 8,192 ft constants (about 40 files) with the track's world size;
   - lift the 512 ft assumptions.
 - **JSTrackViewer:** the same (about 20 files).
-- **JSTraxx:** height import and export with automatic step and base, a world size choice, `.SI3` saves; lakes and waterfalls in the N world, with errors for a 256-cell lake or crest above 2,048 ft; the `.TXX` generation TRAXXV99 (section 15).
+- **JSTraxx:** height import and export with automatic step and base, a world size choice, `.SI3` saves; lakes and waterfalls in the N world, with errors for a 256-cell lake or crest above 2,048 ft; up to 16,384 objects on a version 6 track, 4,096 on any other (5.3); the `.TXX` generation TRAXXV99 (section 15).
 - **JSPod:** `.SI3` recognised; the `.WTR`, `.VEG` and `.WFL` previews draw a 512-cell world.
 - **Converters:** mm1conversion builds Chicago at true scale in a 512 world; Evo 2 conversions keep Pikes Peak's full height.
 
