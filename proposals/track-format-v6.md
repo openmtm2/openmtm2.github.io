@@ -4,6 +4,8 @@ Status: draft open specification, 2026-11-13
 Applies to: Monster Truck Madness 2 tracks, for any engine or tool that reads or writes them (OpenMTM2, Community Patch 4, track editors, converters)
 Maintained by: the OpenMTM2 project
 Replaces: the earlier drafts "tall tracks with fine height steps" (2026-11-09) and "maps four times larger" (2026-11-13)
+Revised: 2026-11-19: a track's own ambience, optional `.TXV` keys for its sky, haze and light tint in Clear weather, allowed on any track (9.6, 16).
+Revised: 2026-11-16 (fifth): a track's level files (its `.TXV`, ground box grids, `.WTR`, `.VEG` and `.WFL`) are looked up by its level's stem first, then its own, as CP4 finds its lakes and waterfalls and OpenMTM2 reads them; several tracks may share one level (3, 5.2, 17).
 Revised: 2026-11-16 (fourth): a version 6 track may place up to 16,384 objects, four times Traxx's 4,096 (5.3, 10 item 10, 14).
 Revised: 2026-11-16 (third): Traxx 1.8.0 is released with `TRAXXV20` (a light's all-weather flag at the end of every box record), and TRAXXV99 now builds on it (15).
 Revised: 2026-11-16 (second): masks cover the track's own world and detail normals are tiles (9.5); the track's own water keeps its units and may reach the top of a taller version 6 terrain (10, item 7).
@@ -53,6 +55,9 @@ The city does not fit, so the conversion shrinks it to 0.83 of its size: buildin
 - World positions in the engine are in **1/256 ft**, as in retail MTM2. Grid files are stored row by row, **row = z, column = x**, `index = row * size + column`, as today.
 - Multi-byte numbers in binary files are little-endian.
 - Paths are POD entry names, case-insensitive. `<stem>` is the track's name, the stem of its situation file.
+- `<level>` is the stem of the level the situation file names on its first line (`LEVELS\<level>.LVL`): its file name up to the first `.`. On most tracks `<level>` and `<stem>` are the same.
+- **Level files.** The files this document names `DATA\<stem>.TXV`, `DATA\<stem>.RA0` to `.RA5`, `DATA\<stem>.CL0` to `.CL2`, and `WORLD\<stem>.WTR`, `.VEG` and `.WFL` belong to the track's level. A reader MUST look each one up as `<level>` first, then as `<stem>`, and use the first it finds. This is how the engines already read them: CP4 0.52 finds its lakes as `WORLD\<lvl>.WTR` and beta 0.53 its waterfalls by the level file's name up to its first `.` (it tries no other name), and OpenMTM2 reads the `.TXV`, `.RA0`, `.RA1`, `.CL0`, `.WTR` and `.VEG` level first, then by the track's stem. (`.CLR`, `.LTE` and the heights are named in the `.LVL` or the `.TXV` and are found by those names, as today.)
+- **Tracks sharing a level.** Several situation files MAY name one level and so share its files: one city with a track per race. A writer SHOULD then name the shared files after the level. A track's own `DATA\<stem>.TXV` beside the level's is allowed but is read only where the level has none.
 
 ## 4. The format today
 
@@ -126,7 +131,7 @@ The retail game builds its track list from every `.SIT` entry in the mounted POD
 
 ### 5.2 The .TXV
 
-- A `.SI3` track MUST have `DATA\<stem>.TXV` with `formatVersion=6`.
+- A `.SI3` track MUST have a `.TXV` with `formatVersion=6`: `DATA\<level>.TXV`, else `DATA\<stem>.TXV` (section 3, "Level files").
 - Key parsing is CP4's (section 4.2). A version 6 reader MUST refuse to load a `.SI3` track whose keys of section 6 have a value outside the allowed ones, with a message naming the key, rather than guess.
 - What a reader does with a `formatVersion` above 6 is up to the reader. Since the `.SI3` format is likely to be updated in later versions, a reader SHOULD at least warn that the track may need a newer build.
 
@@ -352,6 +357,28 @@ On a version 6 track a mask MUST cover the track's own world, W = 32 N ft, once.
 
 **Detail normals are tiles.** `ART\<stem>_DTL` (terrain) and `ART\<stem>_WDTL` (water) are small bump pictures repeated over the ground every few dozen feet, like a texture. They do not cover the world, so they do not change with N.
 
+### 9.6 Ambience
+
+A track can say what its sky, haze and light look like. MTM2 takes them from the level and the weather: the sky is a 16-colour palette picture (the `.LVL` sky `.RAW` and `.ACT`, drawn in palette entries 230 to 245), the light is the `.LVL` sun vector and ambient, and the haze belongs to the weather. A track converted from another game cannot say "the sky is a red dusk with an orange haze" (Motorhead's Red Rock), "it is night" (Neo City) or "a green-grey smog with a short view" (Ruhrstadt). These `.TXV` keys can:
+
+| Key | Value | Meaning |
+|---|---|---|
+| `skyTopColor` | `r,g,b`, 0 to 255 | The sky straight up. |
+| `skyBottomColor` | `r,g,b` | The sky at the horizon. |
+| `skyHorizon` | 0.01 to 1 (default 0.25) | Where between the horizon (0) and the zenith (1) the gradient reaches the top colour. |
+| `skyImage` | an entry, `ART\<name>.PNG` | A full-colour picture round the horizon, over the gradient, its bottom row on the horizon; its alpha shows the gradient through. |
+| `fogColor` | `r,g,b` | The haze's colour. |
+| `fogStartFt`, `fogEndFt` | feet | Where the haze starts and where it is complete. |
+| `lightTint` | `r,g,b` multipliers | The light's hue. A reader scales the three to a mean of 1, so the scene keeps its own level of light. |
+
+- **Every key is optional,** and a track without any of them looks as it does today. They apply in Clear weather; the other weathers keep their own sky and haze, and the tint applies in every weather.
+- **Any track may carry them,** a `.SI2` or `.SIT` one as well as a version 6 one: they are not among the keys only a `.SI3` track may use (section 6). Community Patch 4 parses only the `.TXV` keys it knows and skips the others, so they are safe today.
+- **The haze's distances are proportions.** A game made for a short view (Motorhead draws 120 to 180 m) would put a wall of fog at the bumper. A reader MAY lay `fogStartFt` to `fogEndFt` over its own clear-day range, keeping the start's share of the end, and SHOULD at least keep the colour.
+- **The sky picture** is wrapped as the reader wraps the level's own sky (MTM2's dome repeats its sky four times round the horizon, the picture's bottom row at the horizon). A reader draws the gradient where the picture does not reach or is see-through.
+- **The light tint** multiplies the sun's and the sky's light (and, for a reader that draws an unlit terrain, the terrain's shade).
+
+The first writer is the Motorhead converter (its eight tracks write their own sky gradient, sky picture, haze and tint); the first reader OpenMTM2 (section 16).
+
 ## 10. Reader checklist
 
 A version 6 reader MUST:
@@ -373,6 +400,7 @@ A version 6 reader MUST:
    - replays and saved games;
    - any value assumed to fit in fewer bits than a position in [0, W).
 10. Keep up to 16,384 placed objects (5.3).
+11. Find a track's level files by its level's stem first, then its own (3).
 
 ## 11. Writer guidance
 
@@ -525,6 +553,7 @@ When Traxx takes its own generation number for version 6 tracks, the final draft
 
 - **OpenPhotex:**
   - `.SI3` as an MTM2 situation file;
+  - the ambience keys of 9.6 (`readTxvAmbience`);
   - the keys of section 6 in `readTxvInfo`;
   - step, base and grid size in the height, `.CLR`, `.LTE` and ground box decoders and writers;
   - 16-bit `.RA0`/`.RA1`;
@@ -532,12 +561,13 @@ When Traxx takes its own generation number for version 6 tracks, the final draft
   - world size in the MTM2 simulation (`sim/mtm2/world/`).
 - **OpenMTM2:**
   - list `.SI3` tracks (`src/worker/catalog.js`);
+  - a track's ambience (9.6): the Clear sky from its gradient and picture (`src/game/ambience.js`, `worker/track-build.js` `loadSky`), its haze in Clear weather and its light tint (`render/weather-scene.js`);
   - replace `WORLD_FT` (`src/shared/scene-frame.js`) and the other 8,192 ft constants (about 40 files) with the track's world size;
   - lift the 512 ft assumptions.
-- **JSTrackViewer:** the same (about 20 files).
+- **JSTrackViewer:** the same (about 20 files); level files by the level's stem first, then the track's (`src/worker/level-stem.js`, section 3).
 - **JSTraxx:** height import and export with automatic step and base, a world size choice, `.SI3` saves; lakes and waterfalls in the N world, with errors for a 256-cell lake or crest above 2,048 ft; up to 16,384 objects on a version 6 track, 4,096 on any other (5.3); the `.TXX` generation TRAXXV99 (section 15).
 - **JSPod:** `.SI3` recognised; the `.WTR`, `.VEG` and `.WFL` previews draw a 512-cell world.
-- **Converters:** mm1conversion builds Chicago at true scale in a 512 world; Evo 2 conversions keep Pikes Peak's full height.
+- **Converters:** mm1conversion builds Chicago at true scale in a 512 world, its 22 races as tracks sharing one level (section 3); Evo 2 conversions keep Pikes Peak's full height.
 
 Traxx, the C++ editor, reads and writes no version 6 track yet. What it would have to change, area by area, with the functions and constants involved, is in [Version 6 tracks in Traxx](traxx-v6-support.md).
 
@@ -552,7 +582,6 @@ Points the first implementations met that this document does not settle yet; eac
 - **`.RA2` and `.RA3`.** Section 8.2 allows them 16-bit, but section 8.3 names only the `.RA0`/`.RA1` and `.RA4`/`.RA5` pairs. Implementations check their size only.
 - **A bad `.WTR`, `.WFL` or `.VEG`.** Implementations drop the file with a warning and load the track; only a grid file of the wrong size refuses it.
 - **The `.VEG` header's tile counts** stay 256, as Traxx writes them.
-- **Which `.TXV`.** The situation file's stem (section 3); OpenMTM2 also looks up the level's stem first. They differ only when the stems do.
 - **8-bit ground boxes with an odd base.** `base + 2 * byte` cannot reach an odd-foot height, so such a box must be 16-bit.
 - **Ground boxes below the base.** A box under the base cannot be stored; section 11's "lowest point" should count ground boxes, as JSTraxx already does.
 - **512-cell lakes.** A version 2 lake's height range is the terrain's (9.1); JSTraxx's lake checks still accept the whole 32-bit range there and rely on the leak checks.
